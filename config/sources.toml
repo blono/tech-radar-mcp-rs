@@ -1,0 +1,675 @@
+# Tech Radar MCP source registry.
+#
+# source_type の使い分け:
+#   official   ... 言語・フレームワーク・クラウドの公式ブログ / changelog
+#   changelog  ... リリースノート専用ページ
+#   security   ... CVE / 脆弱性情報専用
+#   community  ... Zenn / はてぶ / HN などのコミュニティ
+#   media      ... 技術系メディア（DevelopersIO / InfoQ など）
+
+default_freshness_hours = 24
+max_items_per_source    = 50
+max_feed_bytes          = 10485760  # 10 MiB
+request_timeout_seconds = 5
+cache_ttl_seconds       = 900       # 15 分
+max_summary_chars       = 1000
+
+
+# ============================================================
+# Rust
+# ============================================================
+
+[[sources]]
+id           = "rust-blog"
+name         = "Rust Blog"
+kind         = "rss"
+url          = "https://blog.rust-lang.org/feed.xml"
+homepage     = "https://blog.rust-lang.org/"
+source_type  = "official"
+priority     = 95
+topics       = ["rust", "language", "security"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "this-week-in-rust"
+name         = "This Week in Rust"
+kind         = "rss"
+url          = "https://this-week-in-rust.org/rss.xml"
+homepage     = "https://this-week-in-rust.org/"
+source_type  = "community"
+priority     = 80
+topics       = ["rust", "crates", "community"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "zenn-rust"
+name         = "Zenn Topic: Rust"
+kind         = "rss"
+url          = "https://zenn.dev/topics/rust/feed"
+homepage     = "https://zenn.dev/topics/rust"
+source_type  = "community"
+priority     = 65
+topics       = ["rust"]
+enabled      = true
+require_published_at = true
+
+
+# ============================================================
+# TypeScript / JavaScript / Frontend
+# ============================================================
+
+[[sources]]
+id           = "typescript-blog"
+name         = "TypeScript Blog"
+kind         = "rss"
+url          = "https://devblogs.microsoft.com/typescript/feed/"
+homepage     = "https://devblogs.microsoft.com/typescript/"
+source_type  = "official"
+priority     = 90
+topics       = ["typescript", "javascript", "toolchain"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "react-blog"
+name         = "React Blog"
+kind         = "rss"
+url          = "https://react.dev/rss.xml"
+homepage     = "https://react.dev/blog"
+source_type  = "official"
+priority     = 85
+topics       = ["react", "frontend"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "vercel-blog"
+name         = "Vercel Blog"
+kind         = "rss"
+url          = "https://vercel.com/atom"
+homepage     = "https://vercel.com/blog"
+source_type  = "official"
+priority     = 75
+topics       = ["next.js", "frontend", "edge", "react"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "nodejs-blog"
+name         = "Node.js Blog"
+kind         = "rss"
+url          = "https://nodejs.org/en/feed/blog.xml"
+homepage     = "https://nodejs.org/en/blog"
+source_type  = "official"
+priority     = 80
+topics       = ["nodejs", "javascript", "runtime"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "infoq-typescript"
+name         = "InfoQ TypeScript News"
+kind         = "rss"
+url          = "https://feed.infoq.com/TypeScript/news"
+homepage     = "https://www.infoq.com/typescript/news/"
+source_type  = "media"
+priority     = 70
+topics       = ["typescript", "javascript"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "zenn-typescript"
+name         = "Zenn Topic: TypeScript"
+kind         = "rss"
+url          = "https://zenn.dev/topics/typescript/feed"
+homepage     = "https://zenn.dev/topics/typescript"
+source_type  = "community"
+priority     = 65
+topics       = ["typescript", "javascript"]
+enabled      = true
+require_published_at = true
+
+
+# ============================================================
+# Java / Spring
+# ============================================================
+
+[[sources]]
+id           = "spring-blog"
+name         = "Spring Blog"
+kind         = "atom"
+url          = "https://spring.io/blog.atom"
+homepage     = "https://spring.io/blog"
+source_type  = "official"
+priority     = 85
+topics       = ["java", "spring", "backend"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "zenn-java"
+name         = "Zenn Topic: Java"
+kind         = "rss"
+url          = "https://zenn.dev/topics/java/feed"
+homepage     = "https://zenn.dev/topics/java"
+source_type  = "community"
+priority     = 60
+topics       = ["java"]
+enabled      = true
+require_published_at = true
+
+
+# ============================================================
+# AWS
+# ============================================================
+
+[[sources]]
+id           = "aws-news-blog"
+name         = "AWS News Blog"
+kind         = "rss"
+url          = "https://aws.amazon.com/blogs/aws/feed/"
+homepage     = "https://aws.amazon.com/blogs/aws/"
+source_type  = "official"
+priority     = 85
+topics       = ["aws", "cloud", "lambda", "dynamodb", "appsync"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "aws-amplify-blog"
+name         = "AWS Amplify Blog"
+kind         = "rss"
+url          = "https://aws.amazon.com/blogs/mobile/feed/"
+homepage     = "https://aws.amazon.com/blogs/mobile/"
+source_type  = "official"
+priority     = 85
+topics       = ["amplify", "aws", "mobile", "react-native", "appsync"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "zenn-aws"
+name         = "Zenn Topic: AWS"
+kind         = "rss"
+url          = "https://zenn.dev/topics/aws/feed"
+homepage     = "https://zenn.dev/topics/aws"
+source_type  = "community"
+priority     = 65
+topics       = ["aws", "cloud"]
+enabled      = true
+require_published_at = true
+
+
+# ============================================================
+# Google Cloud
+# ============================================================
+
+# Google Cloud 公式 RSS は URL が頻繁に変わるため、InfoQ 経由を使用する
+[[sources]]
+id           = "infoq-google-cloud"
+name         = "InfoQ Google Cloud News"
+kind         = "rss"
+url          = "https://feed.infoq.com/google-cloud/news"
+homepage     = "https://www.infoq.com/google-cloud/news/"
+source_type  = "media"
+priority     = 75
+topics       = ["google-cloud", "cloud", "cloud-run", "firestore"]
+enabled      = true
+require_published_at = true
+
+
+# ============================================================
+# Docker
+# ============================================================
+
+[[sources]]
+id           = "docker-blog"
+name         = "Docker Blog"
+kind         = "rss"
+url          = "https://www.docker.com/blog/feed/"
+homepage     = "https://www.docker.com/blog/"
+source_type  = "official"
+priority     = 80
+topics       = ["docker", "container", "oss"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "zenn-docker"
+name         = "Zenn Topic: Docker"
+kind         = "rss"
+url          = "https://zenn.dev/topics/docker/feed"
+homepage     = "https://zenn.dev/topics/docker"
+source_type  = "community"
+priority     = 60
+topics       = ["docker", "container"]
+enabled      = true
+require_published_at = true
+
+
+# ============================================================
+# AI
+# ============================================================
+
+[[sources]]
+id           = "openai-news"
+name         = "OpenAI News"
+kind         = "rss"
+url          = "https://openai.com/news/rss.xml"
+homepage     = "https://openai.com/news/"
+source_type  = "official"
+priority     = 90
+topics       = ["ai", "openai", "chatgpt", "llm"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "google-deepmind-blog"
+name         = "Google DeepMind Blog"
+kind         = "rss"
+url          = "https://blog.google/innovation-and-ai/models-and-research/google-deepmind/rss/"
+homepage     = "https://blog.google/innovation-and-ai/models-and-research/google-deepmind/"
+source_type  = "official"
+priority     = 85
+topics       = ["ai", "llm", "gemini", "ml"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "infoq-anthropic"
+name         = "InfoQ Anthropic News"
+kind         = "rss"
+url          = "https://feed.infoq.com/anthropic/news"
+homepage     = "https://www.infoq.com/anthropic/news/"
+source_type  = "media"
+priority     = 80
+topics       = ["ai", "llm", "anthropic", "mcp"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "infoq-deepmind"
+name         = "InfoQ DeepMind News"
+kind         = "rss"
+url          = "https://feed.infoq.com/google_deepmind/news"
+homepage     = "https://www.infoq.com/google_deepmind/news/"
+source_type  = "media"
+priority     = 75
+topics       = ["ai", "llm", "ml"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "pypi-openai-releases"
+name         = "PyPI openai releases"
+kind         = "rss"
+url          = "https://pypi.org/rss/project/openai/releases.xml"
+homepage     = "https://pypi.org/project/openai/#history"
+source_type  = "changelog"
+priority     = 80
+topics       = ["ai", "openai", "python", "sdk"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "pypi-anthropic-releases"
+name         = "PyPI anthropic releases"
+kind         = "rss"
+url          = "https://pypi.org/rss/project/anthropic/releases.xml"
+homepage     = "https://pypi.org/project/anthropic/#history"
+source_type  = "changelog"
+priority     = 80
+topics       = ["ai", "anthropic", "python", "sdk", "mcp"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "github-blog"
+name         = "GitHub Blog"
+kind         = "rss"
+url          = "https://github.blog/feed/"
+homepage     = "https://github.blog/"
+source_type  = "official"
+priority     = 85
+topics       = ["github", "copilot", "ai", "actions", "oss"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "github-changelog"
+name         = "GitHub Changelog"
+kind         = "rss"
+url          = "https://github.blog/changelog/feed/"
+homepage     = "https://github.blog/changelog/"
+source_type  = "changelog"
+priority     = 90
+topics       = ["github", "copilot", "actions", "security", "oss"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "huggingface-blog"
+name         = "Hugging Face Blog"
+kind         = "rss"
+url          = "https://huggingface.co/blog/feed.xml"
+homepage     = "https://huggingface.co/blog"
+source_type  = "media"
+priority     = 80
+topics       = ["ai", "llm", "ml", "oss"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "google-ai-blog"
+name         = "Google AI Blog"
+kind         = "atom"
+url          = "https://blog.google/innovation-and-ai/technology/ai/rss/"
+homepage     = "https://blog.google/innovation-and-ai/technology/ai/"
+source_type  = "official"
+priority     = 80
+topics       = ["ai", "gemini", "google-cloud", "llm"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "zenn-ai"
+name         = "Zenn Topic: AI"
+kind         = "rss"
+url          = "https://zenn.dev/topics/ai/feed"
+homepage     = "https://zenn.dev/topics/ai"
+source_type  = "community"
+priority     = 65
+topics       = ["ai", "llm", "chatgpt", "gemini"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "zenn-mcp"
+name         = "Zenn Topic: MCP"
+kind         = "rss"
+url          = "https://zenn.dev/topics/mcp/feed"
+homepage     = "https://zenn.dev/topics/mcp"
+source_type  = "community"
+priority     = 70
+topics       = ["mcp", "ai", "agent"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "zenn-llm"
+name         = "Zenn Topic: LLM"
+kind         = "rss"
+url          = "https://zenn.dev/topics/llm/feed"
+homepage     = "https://zenn.dev/topics/llm"
+source_type  = "community"
+priority     = 65
+topics       = ["llm", "ai", "chatgpt", "gemini"]
+enabled      = true
+require_published_at = true
+
+
+# ============================================================
+# セキュリティ
+# ============================================================
+
+[[sources]]
+id           = "jvn-db"
+name         = "JVN iPedia（日本語脆弱性情報）"
+kind         = "rss"
+url          = "https://jvndb.jvn.jp/ja/rss/jvndb.rdf"
+homepage     = "https://jvndb.jvn.jp/"
+source_type  = "security"
+priority     = 95
+topics       = ["security", "cve", "vulnerability"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "krebs-on-security"
+name         = "Krebs on Security"
+kind         = "rss"
+url          = "https://krebsonsecurity.com/feed/"
+homepage     = "https://krebsonsecurity.com/"
+source_type  = "security"
+priority     = 85
+topics       = ["security", "vulnerability", "breach"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "cloudflare-blog"
+name         = "Cloudflare Blog"
+kind         = "rss"
+url          = "https://blog.cloudflare.com/rss/"
+homepage     = "https://blog.cloudflare.com/"
+source_type  = "official"
+priority     = 75
+topics       = ["security", "edge", "cdn", "wasm", "cloud"]
+enabled      = true
+require_published_at = true
+
+
+# ============================================================
+# Python / PyPI
+# ============================================================
+
+[[sources]]
+id           = "pypi-new-packages"
+name         = "PyPI 新着パッケージ"
+kind         = "rss"
+url          = "https://pypi.org/rss/packages.xml"
+homepage     = "https://pypi.org/"
+source_type  = "community"
+priority     = 55
+topics       = ["python", "pypi", "oss"]
+enabled      = false
+require_published_at = true
+
+[[sources]]
+id           = "pypi-updates"
+name         = "PyPI 最新アップデート"
+kind         = "rss"
+url          = "https://pypi.org/rss/updates.xml"
+homepage     = "https://pypi.org/"
+source_type  = "community"
+priority     = 60
+topics       = ["python", "pypi", "oss"]
+enabled      = false
+require_published_at = true
+
+
+# ============================================================
+# 技術メディア・コミュニティ
+# ============================================================
+
+[[sources]]
+id           = "hn-frontpage"
+name         = "Hacker News Front Page"
+kind         = "rss"
+url          = "https://hnrss.org/frontpage"
+homepage     = "https://news.ycombinator.com/"
+source_type  = "community"
+priority     = 60
+topics       = ["general", "oss", "startup"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "hn-best"
+name         = "Hacker News Best"
+kind         = "rss"
+url          = "https://hnrss.org/best"
+homepage     = "https://news.ycombinator.com/best"
+source_type  = "community"
+priority     = 70
+topics       = ["general", "oss", "startup"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "lobsters"
+name         = "Lobsters"
+kind         = "rss"
+url          = "https://lobste.rs/rss"
+homepage     = "https://lobste.rs/"
+source_type  = "community"
+priority     = 65
+topics       = ["general", "rust", "security", "oss"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "hatena-it"
+name         = "はてなブックマーク IT 人気エントリ"
+kind         = "rss"
+url          = "https://b.hatena.ne.jp/hotentry/it.rss"
+homepage     = "https://b.hatena.ne.jp/hotentry/it"
+source_type  = "community"
+priority     = 70
+topics       = ["general", "security", "ai", "oss"]
+enabled      = true
+require_published_at = false  # はてぶは公開日が取れないことがある
+
+[[sources]]
+id           = "developers-io"
+name         = "DevelopersIO（クラスメソッド）"
+kind         = "rss"
+url          = "https://dev.classmethod.jp/feed/"
+homepage     = "https://dev.classmethod.jp/"
+source_type  = "media"
+priority     = 70
+topics       = ["aws", "cloud", "ai", "general"]
+enabled      = true
+require_published_at = true
+
+[[sources]]
+id           = "zenn-trending"
+name         = "Zenn Trending"
+kind         = "rss"
+url          = "https://zenn.dev/feed"
+homepage     = "https://zenn.dev/"
+source_type  = "community"
+priority     = 65
+topics       = ["general", "aws", "typescript", "rust", "ai"]
+enabled      = true
+require_published_at = true
+
+
+# ============================================================
+# topic_rules — キーワードマッチ + score boost
+#
+# boost の目安:
+#   25 ... 最重要（セキュリティ系）
+#   20 ... 重要
+#   15 ... 準重要
+#   10 ... 関心あり
+#   5  ... 軽微
+# ============================================================
+
+[[topic_rules]]
+topic    = "security"
+keywords = ["cve", "vulnerability", "rce", "xss", "csrf", "sqli",
+            "supply chain", "zero-day", "patch", "exploit", "breach",
+            "脆弱性", "セキュリティ"]
+boost    = 25
+
+[[topic_rules]]
+topic    = "mcp"
+keywords = ["mcp", "model context protocol", "agent", "tool calling", "tool use"]
+boost    = 22
+
+[[topic_rules]]
+topic    = "rust"
+keywords = ["rust", "cargo", "crates.io", "tokio", "axum", "rustc", "borrow checker"]
+boost    = 20
+
+[[topic_rules]]
+topic    = "typescript"
+keywords = ["typescript", "tsgo", "javascript", "tsc", "eslint", "biome"]
+boost    = 18
+
+[[topic_rules]]
+topic    = "ai"
+keywords = ["openai", "chatgpt", "claude", "gemini", "copilot", "llm",
+            "gpt-4", "gpt-5", "gpt-6", "o3", "o4", "anthropic", "perplexity",
+            "vibe coding", "生成ai", "生成 ai"]
+boost    = 18
+
+[[topic_rules]]
+topic    = "java"
+keywords = ["java", "jdk", "jvm", "jakarta", "graalvm", "virtual thread"]
+boost    = 16
+
+[[topic_rules]]
+topic    = "spring"
+keywords = ["spring boot", "spring framework", "spring security",
+            "spring data", "spring cloud", "spring ai"]
+boost    = 16
+
+[[topic_rules]]
+topic    = "aws"
+keywords = ["aws", "lambda", "dynamodb", "appsync", "amplify",
+            "cloudformation", "cdk", "eks", "s3", "ec2", "bedrock"]
+boost    = 14
+
+[[topic_rules]]
+topic    = "react"
+keywords = ["react", "next.js", "react native", "expo", "rsc",
+            "react server components", "react compiler"]
+boost    = 14
+
+[[topic_rules]]
+topic    = "docker"
+keywords = ["docker", "container", "dockerfile", "compose",
+            "oci", "buildkit", "containerd"]
+boost    = 13
+
+[[topic_rules]]
+topic    = "kubernetes"
+keywords = ["kubernetes", "k8s", "helm", "kubectl", "operator", "pod", "service mesh"]
+boost    = 12
+
+[[topic_rules]]
+topic    = "google-cloud"
+keywords = ["google cloud", "gcp", "cloud run", "firestore",
+            "bigquery", "vertex ai", "cloud sql"]
+boost    = 12
+
+[[topic_rules]]
+topic    = "llm"
+keywords = ["llm", "large language model", "rag", "fine-tuning",
+            "embedding", "vector db", "transformer", "attention"]
+boost    = 15
+
+[[topic_rules]]
+topic    = "wasm"
+keywords = ["wasm", "webassembly", "wasi", "wasmtime", "wit"]
+boost    = 12
+
+[[topic_rules]]
+topic    = "python"
+keywords = ["python", "pypi", "pip", "uv", "ruff", "fastapi", "pydantic"]
+boost    = 10
+
+[[topic_rules]]
+topic    = "go"
+keywords = ["golang", "go 1.", "go module", "goroutine", "gopher"]
+boost    = 10
+
+[[topic_rules]]
+topic    = "cloudflare"
+keywords = ["cloudflare", "workers", "r2", "d1", "pages", "tunnel"]
+boost    = 10
+
+[[topic_rules]]
+topic    = "amplify"
+keywords = ["amplify", "aws amplify", "appsync", "graphql"]
+boost    = 12
+
+[[topic_rules]]
+topic    = "expo"
+keywords = ["expo", "expo router", "eas build", "react native"]
+boost    = 10

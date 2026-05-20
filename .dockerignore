@@ -1,0 +1,23 @@
+# build 成果物（コンテナ内で再ビルドします）
+target/
+
+# VCS / IDE 関連
+.git/
+.gitignore
+.github/
+.idea/
+.vscode/
+.zed/
+
+# OS / エディタの一時ファイル
+.DS_Store
+*.swp
+*~
+
+# ローカル開発用の Docker 関連
+docker-compose*.yml
+
+# README / docs はビルドに不要ですが、サイズが小さいので含めても害は少ないです。
+# ここでは除外して、最終 image を小さく保ちます。
+README.md
+docs/

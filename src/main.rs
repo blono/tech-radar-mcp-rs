@@ -164,6 +164,27 @@ async fn main() -> Result<()> {
                 password: require_env("MCP_AUTH_PASSWORD")?,
             };
 
+            // DNS rebinding 攻撃対策で、rmcp は Host header 検証を行います
+            // （CVE-2026-42559 の対策、 v1.4.0 以降デフォルト有効）。
+            // デフォルト allowlist は loopback only（localhost / 127.0.0.1 / ::1）のため、
+            // Cloud Run など外部にデプロイする場合は、サービスのホスト名を
+            // `MCP_ALLOWED_HOSTS` 環境変数（カンマ区切り）に設定してください。
+            //
+            // 例: MCP_ALLOWED_HOSTS=xxx.run.app,custom.example.com
+            //
+            // 未設定なら rmcp のデフォルト (loopback only) を維持します。
+            // 設定すると指定値で完全に上書きするため、 ローカル開発も併用するなら
+            // `localhost,127.0.0.1` も明示的に含めてください。
+            let allowed_hosts = std::env::var("MCP_ALLOWED_HOSTS")
+                .ok()
+                .filter(|v| !v.is_empty())
+                .map(|v| {
+                    v.split(',')
+                        .map(|s| s.trim().to_owned())
+                        .filter(|s| !s.is_empty())
+                        .collect::<Vec<_>>()
+                });
+
             // port の優先順位: 環境変数 PORT > CLI --port > デフォルト 8080
             //
             // Cloud Run などほとんどのクラウドは環境変数 PORT で待ち受け port を指示するため、
@@ -176,7 +197,7 @@ async fn main() -> Result<()> {
                 .unwrap_or(args.port);
 
             info!("HTTP transport で起動します (0.0.0.0:{port})");
-            transport::http::run(server, credentials, port).await?;
+            transport::http::run(server, credentials, allowed_hosts, port).await?;
         }
     }
 

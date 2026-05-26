@@ -28,9 +28,9 @@ use axum::{
     routing::get,
 };
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
-use rmcp::transport::streamable_http_server::{
+use rmcp::transport::{StreamableHttpServerConfig, streamable_http_server::{
     StreamableHttpService, session::local::LocalSessionManager,
-};
+}};
 use subtle::ConstantTimeEq;
 use tokio::signal;
 use tracing::{info, warn};
@@ -58,14 +58,24 @@ pub struct Credentials {
 ///   `TechRadarServer` は内部状態を `Arc` で持っているので、clone は高速です。
 /// - `credentials`: Basic 認証の user / password です。
 /// - `port`: listen する TCP port です。
-pub async fn run(server: TechRadarServer, credentials: Credentials, port: u16) -> Result<()> {
+pub async fn run(server: TechRadarServer, credentials: Credentials, allowed_hosts: Option<Vec<String>>, port: u16) -> Result<()> {
+    // rmcp の Streamable HTTP server の config を組み立てます。
+    // allowed_hosts が指定されていればそれで上書きし、 未指定ならデフォルトを保ちます。
+    // デフォルトは loopback only（["localhost", "127.0.0.1", "::1"]）で、
+    // これはローカル開発を想定した安全側の設定です。
+    let mut config = StreamableHttpServerConfig::default();
+    if let Some(hosts) = allowed_hosts {
+        info!("Host header の allowlist を上書きします: {hosts:?}");
+        config.allowed_hosts = hosts;
+    }
+
     // service_factory はセッション確立のたびに呼ばれます。
     // 重い初期化（reqwest client 構築など）を毎回行わないよう、
     // 事前に構築済みの `server` を clone する形にしています。
     let mcp_service = StreamableHttpService::new(
         move || Ok(server.clone()),
         Arc::new(LocalSessionManager::default()),
-        Default::default(),
+        config,
     );
 
     // axum の middleware から参照するため、Arc にラップして state 化します。

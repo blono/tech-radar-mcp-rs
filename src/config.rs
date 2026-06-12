@@ -134,10 +134,15 @@ pub enum SourceType {
 
 impl AppConfig {
     pub fn load(path: impl AsRef<Path>) -> Result<Self> {
-        let text = std::fs::read_to_string(path.as_ref())
-            .with_context(|| format!("設定ファイルを読めませんでした: {}", path.as_ref().display()))?;
-        let config: Self = toml::from_str(&text)
-            .with_context(|| format!("TOML の parse に失敗しました: {}", path.as_ref().display()))?;
+        let text = std::fs::read_to_string(path.as_ref()).with_context(|| {
+            format!(
+                "設定ファイルを読めませんでした: {}",
+                path.as_ref().display()
+            )
+        })?;
+        let config: Self = toml::from_str(&text).with_context(|| {
+            format!("TOML の parse に失敗しました: {}", path.as_ref().display())
+        })?;
 
         config.validate()?;
 
@@ -195,8 +200,8 @@ impl SourceConfig {
             bail!("source name は空にできません: {}", self.id);
         }
 
-        let url = Url::parse(&self.url)
-            .with_context(|| format!("source URL が不正です: {}", self.id))?;
+        let url =
+            Url::parse(&self.url).with_context(|| format!("source URL が不正です: {}", self.id))?;
 
         match url.scheme() {
             "https" | "http" => {}

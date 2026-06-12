@@ -32,7 +32,9 @@ impl FeedCache {
         {
             let guard = self.inner.read().await;
             if let Some(entry) = guard.get(key) {
-                if Utc::now().signed_duration_since(entry.fetched_at) <= Duration::seconds(ttl_seconds) {
+                if Utc::now().signed_duration_since(entry.fetched_at)
+                    <= Duration::seconds(ttl_seconds)
+                {
                     return Some(Arc::clone(&entry.bytes));
                 }
                 // TTL 切れの場合のみ write lock を取りに行く（下の処理）

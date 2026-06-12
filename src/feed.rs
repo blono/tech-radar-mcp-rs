@@ -6,13 +6,13 @@ use anyhow::{Context, Result, bail};
 use chrono::{DateTime, Duration, Utc};
 use feed_rs::parser;
 use futures::future::join_all;
-use wreq::Client;
 use serde::Serialize;
-use wreq::redirect::Policy;
-use wreq_util::Emulation;
 use std::collections::HashSet;
 use std::sync::{Arc, RwLock};
 use tracing::{debug, warn};
+use wreq::Client;
+use wreq::redirect::Policy;
+use wreq_util::Emulation;
 
 /// MCP tool の戻り値として LLM に渡す news item です。
 ///
@@ -58,16 +58,38 @@ pub struct SourceHealth {
 #[derive(Debug, Clone, Serialize)]
 pub struct LatestNewsResult {
     pub generated_at: DateTime<Utc>,
-    pub since_hours: i64,
+    pub since_hours: Option<i64>,
+    /// 実際に適用した絶対下限です。`since` 指定時は overlap 巻き戻し後の値、
+    /// `since_hours` パスでは `generated_at - since_hours` になります。
+    /// 次回 `since` に何を渡すべきかは、これではなく `generated_at` を使ってください。
+    pub effective_since: DateTime<Utc>,
     pub requested_topics: Vec<String>,
     pub items: Vec<NewsItem>,
     pub dropped: DroppedStats,
 }
 
+/// 鮮度フィルタの下限の決め方です。
+///
+/// `since`（絶対時刻）と `since_hours`（相対窓）は本来排他なので、2 つの Option ではなく
+/// enum で「どちらか一方」を型レベルで保証します（矛盾状態・未指定を表現不能にする）。
+/// args 層（`LatestNewsArgs`）では LLM が片方を省略できるよう 2 つの Option のままにし、
+/// server 側で resolve した結果をこの enum で内部に流します。
+#[derive(Debug, Clone, Copy)]
+pub enum Freshness {
+    /// 絶対時刻の下限（前回 `generated_at` 等）。overlap 巻き戻しを適用します。
+    Since(DateTime<Utc>),
+    /// `now` からの相対窓（時間）。server 側で clamp 済みの値が入ります。
+    Hours(i64),
+}
+
 /// feed 取得時の options です。
 #[derive(Debug, Clone)]
 pub struct FetchOptions {
-    pub since_hours: i64,
+    /// 鮮度フィルタの下限です。since / since_hours は排他なので enum に畳んでいます。
+    pub freshness: Freshness,
+    /// `Freshness::Since` のときに threshold を巻き戻す分数（feed 反映ラグ対策）。
+    /// `Freshness::Hours` のときは使いません。
+    pub overlap_minutes: i64,
     pub max_items: usize,
     pub topics: Vec<String>,
     pub include_summary: bool,
@@ -88,10 +110,7 @@ impl FeedService {
     pub fn new(config: Arc<RwLock<AppConfig>>) -> Result<Self> {
         // タイムアウトは起動時の設定値で固定します（Client::builder() に焼き込まれてしまうため）。
         // 変更するにはサーバーの再起動が必要です。
-        let timeout = config
-            .read()
-            .unwrap()
-            .request_timeout_seconds;
+        let timeout = config.read().unwrap().request_timeout_seconds;
 
         let client = Client::builder()
             .emulation(Emulation::Chrome145) // TLS Fingerprinting
@@ -122,7 +141,15 @@ impl FeedService {
     pub async fn latest_items(&self, options: FetchOptions) -> LatestNewsResult {
         let config = self.config_snapshot(); // 1 回の tool 呼び出し中は同じ設定 snapshot を使います。
         let now = Utc::now();
-        let threshold = now - Duration::hours(options.since_hours);
+        // threshold の決定方針:
+        // - Freshness::Since は絶対下限。feed 反映ラグ対策で overlap_minutes だけ過去に巻き戻す。
+        //   下限クランプはしない（前回が数分前なら数分窓で正確に取りたいため）。
+        // - Freshness::Hours は now からの相対窓（overlap は効かせない）。
+        // echo 用に、相対窓を使ったときだけ since_hours を Some で持ちます。
+        let (threshold, since_hours) = match options.freshness {
+            Freshness::Since(since) => (since - Duration::minutes(options.overlap_minutes), None),
+            Freshness::Hours(hours) => (now - Duration::hours(hours), Some(hours)),
+        };
         let topic_filter = normalize_topics(&options.topics);
 
         // source は独立しているため並列取得します。
@@ -149,7 +176,8 @@ impl FeedService {
                             None => {
                                 // ここに来るのは require_published_at=false の source のみ
                                 // 閾値チェックは不可能なのでスキップして通す
-                                if !topic_filter.is_empty() && !matches_topics(&item, &topic_filter) {
+                                if !topic_filter.is_empty() && !matches_topics(&item, &topic_filter)
+                                {
                                     continue;
                                 }
 
@@ -210,7 +238,8 @@ impl FeedService {
 
         LatestNewsResult {
             generated_at: now,
-            since_hours: options.since_hours,
+            since_hours,
+            effective_since: threshold,
             requested_topics: options.topics,
             items,
             dropped,
@@ -346,7 +375,7 @@ impl FeedService {
     async fn fetch_source_bytes(
         &self,
         source: &SourceConfig,
-        config: &AppConfig
+        config: &AppConfig,
     ) -> Result<Arc<Vec<u8>>> {
         if let Some(cached) = self.cache.get(&source.id, config.cache_ttl_seconds).await {
             return Ok(cached);
@@ -405,7 +434,8 @@ fn dedupe_key(item: &NewsItem) -> String {
     item.url
         .as_ref()
         .and_then(|url_str| url::Url::parse(url_str).ok())
-        .map(|mut url| { // 記事の同一性に影響のないパラメータなどを落とします。
+        .map(|mut url| {
+            // 記事の同一性に影響のないパラメータなどを落とします。
             url.set_query(None); // `?ref=twitter` のようなトラッキングパラメータを無視します。
             url.set_fragment(None); // `#...` を無視します。
             url.to_string().to_lowercase()
@@ -414,15 +444,15 @@ fn dedupe_key(item: &NewsItem) -> String {
 }
 
 /// title / summary から簡易的に topic を推定します。
-fn extend_topics_from_text(
-    topics: &mut Vec<String>,
-    text: &str,
-    rules: &[TopicRule],
-) {
+fn extend_topics_from_text(topics: &mut Vec<String>, text: &str, rules: &[TopicRule]) {
     let lower = text.to_lowercase();
 
     for rule in rules {
-        if rule.keywords.iter().any(|keyword| lower.contains(keyword.as_str())) {
+        if rule
+            .keywords
+            .iter()
+            .any(|keyword| lower.contains(keyword.as_str()))
+        {
             topics.push(rule.topic.clone());
         }
     }

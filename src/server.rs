@@ -1,11 +1,10 @@
 use crate::config::AppConfig;
-use crate::feed::{FeedService, FetchOptions};
+use crate::feed::{FeedService, FetchOptions, Freshness};
 use anyhow::Result;
+use chrono::{DateTime, Utc};
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::{CallToolResult, Content};
-use rmcp::{
-    ErrorData as McpError, ServerHandler, tool, tool_handler, tool_router,
-};
+use rmcp::{ErrorData as McpError, ServerHandler, tool, tool_handler, tool_router};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -23,6 +22,17 @@ pub struct TechRadarServer {
     feed_service: FeedService,
 }
 
+/// `since`（絶対時刻）指定時に threshold を巻き戻す分数です。
+///
+/// RSS / Atom は feed への反映ラグがあり、`published_at` が前回 `generated_at` より
+/// わずかに前なのに、feed に載るのはその後、という item が発生します。
+/// `since` をちょうど前回 `generated_at` にすると、こういう item を静かに取りこぼすため、
+/// 少しだけ過去に巻き戻して取りこぼしを防ぎます。重複は URL / title の dedupe で吸収されます。
+///
+/// なお、この巻き戻しは `since` パスのみに効かせ、`since_hours`（24h / 48h などの固定窓）には
+/// 効かせません。固定窓は「ちょうどその時間」が欲しく、連続 fetch の継ぎ目問題も無いためです。
+const SINCE_OVERLAP_MINUTES: i64 = 10;
+
 impl TechRadarServer {
     pub fn new(config: Arc<RwLock<AppConfig>>) -> Result<Self> {
         Ok(Self {
@@ -34,6 +44,14 @@ impl TechRadarServer {
 /// `get_latest_technology_news` の引数 schema 用 struct です。
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct LatestNewsArgs {
+    #[schemars(
+        description = "絶対時刻の下限です（RFC3339 / ISO8601、例: 2026-06-11T10:35:00Z）。\
+        前回この MCP を呼んだときのレスポンスの generated_at をそのまま渡すと、\
+        その時刻以降の新着 item だけを返します。指定した場合は since_hours より優先され、\
+        since_hours は無視されます。「前回の続き」を取りたいときはこちらを使ってください。"
+    )]
+    pub since: Option<DateTime<Utc>>,
+
     #[schemars(description = "何時間以内の記事だけを含めるか。")]
     pub since_hours: Option<i64>,
 
@@ -51,6 +69,12 @@ pub struct LatestNewsArgs {
 /// `get_trending_technology_topics` の引数 schema 用 struct です。
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct TrendingTopicsArgs {
+    #[schemars(
+        description = "絶対時刻の下限です（RFC3339 / ISO8601）。前回レスポンスの generated_at を渡すと、\
+        その時刻以降の記事だけを集計します。指定した場合は since_hours より優先されます。"
+    )]
+    pub since: Option<DateTime<Utc>>,
+
     #[schemars(description = "何時間以内の記事だけを対象にするか。")]
     pub since_hours: Option<i64>,
 
@@ -62,7 +86,9 @@ pub struct TrendingTopicsArgs {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[allow(dead_code)]
 pub struct SourceHealthArgs {
-    #[schemars(description = "将来、disabled source も含める option を追加するための予約 field です。")]
+    #[schemars(
+        description = "将来、disabled source も含める option を追加するための予約 field です。"
+    )]
     pub include_disabled: Option<bool>,
 }
 
@@ -88,19 +114,17 @@ impl TechRadarServer {
     ) -> Result<CallToolResult, McpError> {
         let config = self.feed_service.config_snapshot();
 
-        // LLM から極端な値が来ても、MCP 側で安全な範囲に丸めます。
-        let since_hours = args
-            .since_hours
-            .unwrap_or(config.default_freshness_hours)
-            .clamp(1, 24 * 30);
-
-        let max_items = args.max_items.unwrap_or(50).clamp(1, 100);
+        // since / since_hours の排他・優先順位・デフォルト・clamp を resolve_freshness に集約します。
+        let freshness =
+            resolve_freshness(args.since, args.since_hours, config.default_freshness_hours);
+        let max_items = args.max_items.unwrap_or(100).clamp(1, 300);
         let include_summary = args.include_summary.unwrap_or(true);
 
         let result = self
             .feed_service
             .latest_items(FetchOptions {
-                since_hours,
+                freshness,
+                overlap_minutes: SINCE_OVERLAP_MINUTES,
                 max_items,
                 topics: args.topics,
                 include_summary,
@@ -118,14 +142,14 @@ impl TechRadarServer {
         Parameters(args): Parameters<TrendingTopicsArgs>,
     ) -> Result<CallToolResult, McpError> {
         let config = self.feed_service.config_snapshot();
-        let since_hours = args.since_hours
-            .unwrap_or(config.default_freshness_hours)
-            .clamp(1, 24 * 30);
+        let freshness =
+            resolve_freshness(args.since, args.since_hours, config.default_freshness_hours);
         let max_topics = args.max_topics.unwrap_or(20).clamp(1, 50);
         let result = self
             .feed_service
             .latest_items(FetchOptions {
-                since_hours,
+                freshness,
+                overlap_minutes: SINCE_OVERLAP_MINUTES,
                 max_items: 200,
                 topics: vec![],
                 include_summary: false,
@@ -135,7 +159,9 @@ impl TechRadarServer {
 
         for item in &result.items {
             for topic in &item.topics {
-                map.entry(topic.clone()).or_default().push(item.title.clone());
+                map.entry(topic.clone())
+                    .or_default()
+                    .push(item.title.clone());
             }
         }
 
@@ -161,7 +187,7 @@ impl TechRadarServer {
 
         to_call_tool_result(&json!({
             "generated_at": result.generated_at,
-            "since_hours": since_hours,
+            "effective_since": result.effective_since,
             "topics": topics,
             "dropped": result.dropped,
         }))
@@ -226,6 +252,25 @@ impl TechRadarServer {
     instructions = "この MCP server は、設定済み RSS / Atom source から最新の技術ニュース、技術トレンド、source health を返します。回答前に公開日時で絞り込み、重複除去とスコアリングを行います。任意 URL の本文取得は行いません。"
 )]
 impl ServerHandler for TechRadarServer {}
+
+/// `since` / `since_hours` から内部用の `Freshness` を解決します。
+///
+/// 排他ルール・優先順位・デフォルト・clamp をこの 1 箇所に閉じ込めるための関数です。
+/// - `since`（絶対時刻）があれば最優先。`since_hours` は無視します。
+/// - 無ければ `since_hours`（無ければ default）を 1〜720 時間（= 24 * 30）に clamp した相対窓にします。
+fn resolve_freshness(
+    since: Option<DateTime<Utc>>,
+    since_hours: Option<i64>,
+    default_hours: i64,
+) -> Freshness {
+    match since {
+        Some(at) => Freshness::Since(at),
+        None => {
+            let hours = since_hours.unwrap_or(default_hours).clamp(1, 24 * 30);
+            Freshness::Hours(hours)
+        }
+    }
+}
 
 fn to_call_tool_result<T: Serialize>(value: &T) -> Result<CallToolResult, McpError> {
     let json_str = serde_json::to_string(value).map_err(|e| {

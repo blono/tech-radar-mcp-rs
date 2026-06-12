@@ -28,9 +28,10 @@ use axum::{
     routing::get,
 };
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
-use rmcp::transport::{StreamableHttpServerConfig, streamable_http_server::{
-    StreamableHttpService, session::local::LocalSessionManager,
-}};
+use rmcp::transport::{
+    StreamableHttpServerConfig,
+    streamable_http_server::{StreamableHttpService, session::local::LocalSessionManager},
+};
 use subtle::ConstantTimeEq;
 use tokio::signal;
 use tracing::{info, warn};
@@ -58,7 +59,12 @@ pub struct Credentials {
 ///   `TechRadarServer` は内部状態を `Arc` で持っているので、clone は高速です。
 /// - `credentials`: Basic 認証の user / password です。
 /// - `port`: listen する TCP port です。
-pub async fn run(server: TechRadarServer, credentials: Credentials, allowed_hosts: Option<Vec<String>>, port: u16) -> Result<()> {
+pub async fn run(
+    server: TechRadarServer,
+    credentials: Credentials,
+    allowed_hosts: Option<Vec<String>>,
+    port: u16,
+) -> Result<()> {
     // rmcp の Streamable HTTP server の config を組み立てます。
     // allowed_hosts が指定されていればそれで上書きし、 未指定ならデフォルトを保ちます。
     // デフォルトは loopback only（["localhost", "127.0.0.1", "::1"]）で、
@@ -139,7 +145,8 @@ async fn basic_auth_middleware(
         (
             StatusCode::UNAUTHORIZED,
             [(header::WWW_AUTHENTICATE, r#"Basic realm="MCP""#)],
-        ).into_response()
+        )
+            .into_response()
     }
 }
 
@@ -155,8 +162,7 @@ fn check_basic_auth(headers: &HeaderMap, expected: &Credentials) -> bool {
         .and_then(|s| {
             let (scheme, encoded) = s.split_once(' ')?;
             scheme.eq_ignore_ascii_case("basic").then(|| encoded.trim())
-        })
-    {
+        }) {
         Some(s) => s,
         None => return false,
     };

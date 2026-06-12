@@ -12,19 +12,15 @@ use crate::feed::NewsItem;
 /// - ユーザーが関心を持ちやすい topic
 ///
 /// ここで score を付けてから LLM に渡すことで、LLM は「候補選別」ではなく「意味づけ / 要約」に集中できます。
-pub fn score_item(
-    source: &SourceConfig,
-    item: &NewsItem,
-    topic_rules: &[TopicRule],
-) -> i32 {
+pub fn score_item(source: &SourceConfig, item: &NewsItem, topic_rules: &[TopicRule]) -> i32 {
     let mut score = source.priority;
 
     score += match source.source_type {
-        SourceType::Official   => 20,
-        SourceType::Changelog  => 15,
-        SourceType::Security   => 25,
-        SourceType::Community  => 5,
-        SourceType::Media      => 0,
+        SourceType::Official => 20,
+        SourceType::Changelog => 15,
+        SourceType::Security => 25,
+        SourceType::Community => 5,
+        SourceType::Media => 0,
     };
 
     for topic in &item.topics {

@@ -115,17 +115,16 @@ async fn main() -> Result<()> {
             }
         })?;
 
-        watcher.watch(config_path.as_ref(), RecursiveMode::NonRecursive)
+        watcher
+            .watch(config_path.as_ref(), RecursiveMode::NonRecursive)
             .with_context(|| format!("ファイルの監視開始に失敗しました: {config_path}"))?;
 
         // 変更イベントを受け取るタスクです。
         tokio::spawn(async move {
             while let Some(event) = rx.recv().await {
                 // Write / Create イベントのみリロードします（Access, Remove などは無視します）。
-                let should_reload = matches!(
-                    event.kind,
-                    EventKind::Modify(_) | EventKind::Create(_)
-                );
+                let should_reload =
+                    matches!(event.kind, EventKind::Modify(_) | EventKind::Create(_));
 
                 if !should_reload {
                     continue;
@@ -138,7 +137,9 @@ async fn main() -> Result<()> {
                     }
                     Err(e) => {
                         // parse エラー時は直前の設定を使い続けます。
-                        warn!("sources.toml のリロードに失敗しました（直前の設定を継続します）: {e:#}");
+                        warn!(
+                            "sources.toml のリロードに失敗しました（直前の設定を継続します）: {e:#}"
+                        );
                     }
                 }
             }
